@@ -18,7 +18,7 @@ public class TeleOP extends LinearOpMode {
 
             waitForStart();
             double straight, turn, strafe;
-            double liftPower;
+            double intakePower,liftPower;
             while (opModeIsActive()) {
                 straight = (-gamepad1.left_stick_y > 0.05) ? (Math.pow(-gamepad1.left_stick_y, 3) + 0.3) : (-gamepad1.left_stick_y < -0.05) ? (Math.pow(-gamepad1.left_stick_y, 3) - 0.3) : 0;
                 strafe = (gamepad1.left_stick_x > 0.05) ? (Math.pow(gamepad1.left_stick_x, 3) + 0.3) : (gamepad1.left_stick_x < -0.05) ? (Math.pow(gamepad1.left_stick_x, 3) - 0.3) : 0;
@@ -28,8 +28,8 @@ public class TeleOP extends LinearOpMode {
 
                 drive.setDrivePowers(new PoseVelocity2d(
                         new Vector2d(
-                                straight*0.4,
-                                -strafe*0.4
+                                straight*1,
+                                -strafe*1
                         ),
                         -turn*0.3
                 ));
@@ -40,6 +40,8 @@ public class TeleOP extends LinearOpMode {
                 telemetry.addData("y", drive.pose.position.y);
                 telemetry.addData("heading (deg)", Math.toDegrees(drive.pose.heading.toDouble()));
 
+                intakePower = (gamepad1.left_bumper)?1:gamepad1.right_trigger>0?-1:0;
+                liftPower = (gamepad1.right_bumper)?1:-gamepad1.right_trigger;
 
 
 
