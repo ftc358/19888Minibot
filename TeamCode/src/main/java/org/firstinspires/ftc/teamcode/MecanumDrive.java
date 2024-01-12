@@ -38,6 +38,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.IMU;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -107,7 +108,10 @@ public final class MecanumDrive {
             new ProfileAccelConstraint(PARAMS.minProfileAccel, PARAMS.maxProfileAccel);
 
     public final DcMotorEx leftFront, leftBack, rightBack, rightFront;
-    public final Servo claw1,claw2;
+    public final DcMotorEx lift1,lift2;
+    public final Servo claw1,claw2, arm1, arm2, wrist;
+
+//    public final TouchSensor LiftEnd;
 
     public final VoltageSensor voltageSensor;
 
@@ -223,8 +227,26 @@ public final class MecanumDrive {
         // TODO: make sure your config has an IMU with this name (can be BNO or BHI)
         //   see https://ftc-docs.firstinspires.org/en/latest/hardware_and_software_configuration/configuring/index.html
 
+        lift1 = hardwareMap.get(DcMotorEx.class,"lift1");
+        lift2 = hardwareMap.get(DcMotorEx.class,"lift2");
+
+        lift1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        lift2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+
         claw1 = hardwareMap.get(Servo.class,"claw1");
         claw2 = hardwareMap.get(Servo.class,"claw2");
+        claw2.setDirection(Servo.Direction.REVERSE);
+
+
+        arm1 = hardwareMap.get(Servo.class,"arm1");
+        arm2 = hardwareMap.get(Servo.class,"arm2");
+        arm1.setDirection(Servo.Direction.REVERSE);
+
+        wrist = hardwareMap.get(Servo.class,"wrist");
+        wrist.setDirection(Servo.Direction.REVERSE);
+
+//        LiftEnd = hardwareMap.get(TouchSensor.class,"LiftEnd");
 
         imu = hardwareMap.get(IMU.class, "imu");
         IMU.Parameters parameters = new IMU.Parameters(new RevHubOrientationOnRobot(
