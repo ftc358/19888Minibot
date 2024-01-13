@@ -21,25 +21,31 @@ public class TeleOP extends LinearOpMode {
     double claw1Grab = 0.51;
     double claw2Grab = 0.28;
     double wrist1Pos = 0.2;
-    double wrist2Pos = 0.4;
+    double wrist2Pos = 1.0;
     double arm1Pos = 0.3;
     double arm2Pos = 0.7;
     //-------------------------------------------
 
     //other stuff idk
-    Gamepad currentGamepad1, previousGamepad1;
-    Gamepad currentGamepad2, previousGamepad2;
+    Gamepad currentGamepad1 = new Gamepad();
+    Gamepad previousGamepad1 = new Gamepad();
+
 
 
     @Override
     public void runOpMode() throws InterruptedException {
         MecanumDrive drive = new MecanumDrive(hardwareMap, new Pose2d(0, 0, 0));
-
+        drive.imu.resetYaw();
 
         waitForStart();
         double straight, turn, strafe;
 
         double liftPower, claw1Pos, claw2Pos, wristPos, armPos;
+        armPos = 0;
+        wristPos = 0;
+        claw1Pos = 0;
+        claw2Pos = 0;
+
         int transferState = 0;
         int intakeState = 0;
 
@@ -47,8 +53,8 @@ public class TeleOP extends LinearOpMode {
         boolean intake1 = false;
 
         while (opModeIsActive()) {
-            currentGamepad1 = gamepad1;
-            previousGamepad1 = currentGamepad1;
+            currentGamepad1.copy(gamepad1);
+
 
             straight = (-currentGamepad1.left_stick_y > 0.05) ? (Math.pow(-gamepad1.left_stick_y, 3) + 0.3) : (-gamepad1.left_stick_y < -0.05) ? (Math.pow(-gamepad1.left_stick_y, 3) - 0.3) : 0;
             strafe = (gamepad1.left_stick_x > 0.05) ? (Math.pow(gamepad1.left_stick_x, 3) + 0.3) : (gamepad1.left_stick_x < -0.05) ? (Math.pow(gamepad1.left_stick_x, 3) - 0.3) : 0;
@@ -63,88 +69,78 @@ public class TeleOP extends LinearOpMode {
 
             //IMU Feedback data------------------------------------------------------------
             YawPitchRollAngles angles = drive.imu.getRobotYawPitchRollAngles();
-            telemetry.addData("Pitch",angles.getPitch(AngleUnit.DEGREES));
-            telemetry.addData("Roll",angles.getRoll(AngleUnit.DEGREES));
             telemetry.addData("Yaw",angles.getYaw(AngleUnit.DEGREES));
             //------------------------------------------------------------------------------
 
 
             //INTAKE LMAOOOOOOO ------------------------------------------
-            if (gamepad1.right_bumper && intakeState == 0){
-                claw1Pos = claw1Grab;
-                intakeState = 1;
+            if (currentGamepad1.right_bumper && !previousGamepad1.right_bumper){
+               intakeState = (intakeState +1)%5;
             }
-            else if (gamepad1.right_bumper && intakeState == 1){
-                claw2Pos = claw2Grab;
-                intakeState = 2;
+            if (currentGamepad1.x && !previousGamepad1.x) {
+                transferState = (transferState + 1)%3;
             }
-            else if (gamepad1.right_bumper && intakeState == 2){
-                claw2Pos = 0;
-                intakeState = 3;
-            }
-            else if (gamepad1.right_bumper && intakeState == 3){
-                claw1Pos = 0;
-                armPos = 0;
-                wristPos = 0;
-                intakeState = 0;
-                transferState = 0;
-            }
-            //------------------------------------------------------------
 
-            //TRANSFER TSTUFFFFFFFFF ------------------------------------------
-            if (gamepad1.x && transferState == 0){
-                //drop front
-                armPos = arm1Pos;
-                wristPos = wrist1Pos;
-                transferState = 1;
+            switch (intakeState){
+                case 0:
+                    claw1Pos= 0;
+                    claw2Pos = 0;
+                    break;
+                case 1:
+                    claw1Pos = claw1Grab;
+                    claw2Pos = claw2Grab;
+                    break;
+                case 2:
+                    claw2Pos = 0;
+                    break;
+                case 3:
+                    claw1Pos = 0;
+                    break;
+                case 4:
+                    armPos = 0;
+                    wristPos = 0;
+                    transferState = 0;
+                    intakeState = 0;
+                    break;
             }
-            else if (gamepad1.x && transferState == 1){
-                //drop back
-                armPos = arm2Pos;
-                wristPos = wrist2Pos;
-                transferState = 2;
+
+            if (gamepad1.dpad_left){drive.imu.resetYaw();}
+
+            //TRANSFER TSTUFFFFFFFFF ----------------------------------------
+
+            switch (transferState){
+                case 0:
+                    armPos = 0;
+                    wristPos = 0;
+                    break;
+                case 1:
+                    armPos = arm1Pos;
+                    wristPos = wrist1Pos;
+                    break;
+                case 2:
+                    armPos = arm2Pos;
+                    wristPos = wrist2Pos;
+                    break;
             }
-            else if (gamepad1.x && transferState == 2){
-                //reset
-                armPos = 0;
-                wristPos = 0;
-                transferState = 0;
-            }
+
+
             //------------------------------------------------------------------
 
 
             //LIFT LIFT ------------------------------------------------------------
-            else if (gamepad1.left_trigger >= 0.1){
+            if (gamepad1.left_trigger >= 0.1){
                 //lift go up
-                drive.lift1.setPower(gamepad1.left_trigger);
-                drive.lift2.setPower(-gamepad1.left_trigger);
+                liftPower = gamepad1.left_trigger/2;
             }
             else if (gamepad1.left_bumper){
                 //lift go down
-                drive.lift1.setPower(-0.4);
-                drive.lift2.setPower(0.4);
-            }
+                liftPower = -0.2;            }
             else{
-                //lift hold
-                drive.lift1.setPower(0.05);
-                drive.lift2.setPower(-0.05);
+                liftPower = 0;
             }
             //------------------------------------------------------------------
-
-
-            //=---------------------------------------------
-            claw1Pos = gamepad2.left_stick_x;
-            claw2Pos = gamepad2.right_stick_x;
-            //0.28
-            //0.51
-
-            armPos = currentGamepad1.left_trigger;
-            //0.7 all the way back, 0.05 off the ground a bit, assuming 0.3 for front placement.
-            wristPos = currentGamepad1.right_trigger;
-            //1.0 max
-            //------------------------------------------------
-
-
+            telemetry.addData("TransState",transferState);
+            telemetry.addData("INTState",intakeState);
             telemetry.addData("armPos",armPos);
             telemetry.addData("wristPos",wristPos);
             telemetry.addData("claw1Pos",claw1Pos);
@@ -155,7 +151,10 @@ public class TeleOP extends LinearOpMode {
             drive.wrist.setPosition(wristPos);
             drive.arm1.setPosition(armPos);
             drive.arm2.setPosition(armPos);
+            drive.lift1.setPower(liftPower);
+            drive.lift2.setPower(liftPower);
             telemetry.update();
+            previousGamepad1.copy(currentGamepad1);
         }
     }
 }
